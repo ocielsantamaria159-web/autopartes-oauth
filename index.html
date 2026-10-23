@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Autopartes Manager — Retorno de autorización</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; font-family: system-ui, Segoe UI, Arial, sans-serif; background: #f2f5f9; color: #17263c; }
+    main { width: min(100%, 620px); background: #fff; border: 1px solid #dce3ec; border-radius: 16px; padding: 28px; box-shadow: 0 12px 36px rgba(20, 40, 70, .08); }
+    .tag { display: inline-block; background: #edf3fb; border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 700; }
+    h1 { font-size: 24px; margin: 18px 0 8px; }
+    p { line-height: 1.55; }
+    button { border: 0; border-radius: 10px; padding: 12px 16px; background: #1456c0; color: white; font-size: 15px; font-weight: 700; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #87b7ff; outline-offset: 2px; }
+    button:disabled { background: #6f8fbf; cursor: default; }
+    #status { margin-top: 14px; font-size: 14px; }
+    .warning { border-left: 4px solid #d59d00; padding-left: 12px; color: #5c4b1d; }
+    .small { color: #5a6879; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">Autopartes Manager · OAuth</span>
+    <h1 id="heading">Retorno de autorización</h1>
+    <p id="message">Esta página no conecta con tu cuenta de Mercado Libre por sí misma. Su única función es ayudarte a copiar la URL de retorno para pegarla en el programa local.</p>
+    <button id="copy" type="button" disabled>Copiar URL de retorno</button>
+    <p id="status" role="status" aria-live="polite">Comprobando el retorno…</p>
+    <p class="warning"><strong>No compartas la URL copiada.</strong> Contiene un código temporal de autorización. Pégala únicamente en la ventana local de Autopartes Manager. Nunca la publiques ni la envíes por chat.</p>
+    <p class="small">La página no envía intencionalmente el código a otros servicios ni carga imágenes, fuentes, analítica o scripts externos. El sitio de alojamiento recibe la solicitud web normal que contiene la URL de retorno.</p>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      // Keep the full callback URL only in this page's memory so the user can copy it.
+      const callbackUrl = window.location.href;
+      const params = new URL(callbackUrl).searchParams;
+      const code = params.get('code');
+      const state = params.get('state');
+      const error = params.get('error');
+      const button = document.getElementById('copy');
+      const status = document.getElementById('status');
+      const heading = document.getElementById('heading');
+      const message = document.getElementById('message');
+
+      // Remove OAuth parameters from the visible address bar/history entry after capturing them.
+      // The full URL remains in memory only until this tab is closed or reloaded.
+      try { window.history.replaceState(null, document.title, window.location.pathname + window.location.hash); } catch (_) {}
+
+      if ((code && state) || (error && state)) {
+        button.disabled = false;
+        if (error) {
+          heading.textContent = 'Autorización no completada';
+          message.textContent = 'Mercado Libre devolvió un error. Copia la URL de retorno y pégala solo en Autopartes Manager para que el programa la interprete.';
+          status.textContent = 'Hay una respuesta de error; todavía no significa que exista una conexión.';
+        } else {
+          heading.textContent = 'Respuesta recibida';
+          message.textContent = 'Pulsa el botón para copiar la URL completa y pégala únicamente en la ventana local de Autopartes Manager que está esperando la URL de retorno.';
+          status.textContent = 'No cierres esta pestaña hasta copiar la URL.';
+        }
+      } else {
+        heading.textContent = 'Página de retorno lista';
+        message.textContent = 'Esta página se usa después de autorizar la aplicación en Mercado Libre. Si llegaste aquí manualmente, regresa al programa y empieza el proceso de autorización.';
+        status.textContent = 'No se detectó una respuesta OAuth válida.';
+      }
+
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(callbackUrl);
+          status.textContent = 'URL copiada. Pégala en la ventana local de Autopartes Manager; no la compartas.';
+          button.textContent = 'URL copiada';
+          button.disabled = true;
+        } catch (_) {
+          // Do not render the code in the page. Explain manual recovery without exposing it.
+          status.textContent = 'El navegador bloqueó el portapapeles. Permite copiar en este sitio e inténtalo otra vez; no compartas la URL.';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
